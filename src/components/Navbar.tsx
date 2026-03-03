@@ -18,7 +18,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl gamatch-nav-shadow border-b border-border">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-gamatch-black/80 backdrop-blur-xl gamatch-nav-shadow border-b border-primary/10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
@@ -109,7 +109,7 @@ const Navbar = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden overflow-hidden bg-card border-b border-border"
+            className="md:hidden overflow-hidden bg-gamatch-black/95 border-b border-primary/10"
           >
             <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
               <Link to="/" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Home</Link>
