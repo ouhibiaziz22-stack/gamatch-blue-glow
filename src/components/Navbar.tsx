@@ -44,6 +44,9 @@ const Navbar = () => {
           <Link to="/products?category=Audio" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
             Audio
           </Link>
+          <Link to="/custom-build" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            Custom Build
+          </Link>
         </div>
 
         {/* Actions */}
@@ -116,6 +119,7 @@ const Navbar = () => {
               <Link to="/products" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Products</Link>
               <Link to="/products?category=Controllers" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Controllers</Link>
               <Link to="/products?category=Audio" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Audio</Link>
+              <Link to="/custom-build" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Custom Build</Link>
             </div>
           </motion.div>
         )}

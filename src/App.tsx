@@ -12,6 +12,8 @@ import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import NotFound from "./pages/NotFound";
+import CustomBuild from "./pages/CustomBuild";
+import CustomBuildIntro from "./pages/CustomBuildIntro";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/products" element={<Products />} />
               <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/custom-build" element={<CustomBuildIntro />} />
+              <Route path="/custom-build/builder" element={<CustomBuild />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Footer />
