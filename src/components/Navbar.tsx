@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShoppingCart, Search, Menu, X } from "lucide-react";
+import { ShoppingCart, Search, Menu, X, CircleUserRound } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -26,7 +26,7 @@ const Navbar = () => {
             <span className="text-primary-foreground font-display font-bold text-sm">G</span>
           </div>
           <span className="font-display font-bold text-xl text-foreground">
-            Ga<span className="text-primary">match</span>
+            Ga<span className="text-primary">matech</span>
           </span>
         </Link>
 
@@ -51,6 +51,15 @@ const Navbar = () => {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          <Link
+            to="/connexion"
+            className="inline-flex h-9 items-center gap-2 rounded-lg px-2 lg:px-3 text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+            aria-label="Connexion"
+          >
+            <CircleUserRound className="w-5 h-5" />
+            <span className="hidden lg:inline text-sm font-medium">Connexion</span>
+          </Link>
+
           {/* Search */}
           <AnimatePresence>
             {searchOpen && (
@@ -120,6 +129,7 @@ const Navbar = () => {
               <Link to="/products?category=Controllers" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Controllers</Link>
               <Link to="/products?category=Audio" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Audio</Link>
               <Link to="/custom-build" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Custom Build</Link>
+              <Link to="/connexion" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Connexion</Link>
             </div>
           </motion.div>
         )}

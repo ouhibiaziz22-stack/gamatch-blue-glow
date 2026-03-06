@@ -662,7 +662,7 @@ export const PcBuilderPreview: React.FC<PcBuilderPreviewProps> = ({ selections }
         <div style={styles.overlay}>
           <h3 style={styles.title}>3D Build Preview</h3>
           <p style={styles.cost}>
-            Total Cost: <strong>{total > 0 ? `${total.toLocaleString()} DT` : "—"}</strong>
+            Total Cost: <strong>{total > 0 ? `${total.toLocaleString()} TND` : "—"}</strong>
           </p>
         </div>
       </div>

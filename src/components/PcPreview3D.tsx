@@ -11,11 +11,12 @@
  * GROUND:       Reflective dark plane with ContactShadows
  */
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, Environment, OrbitControls, AdaptiveDpr } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +32,9 @@ type BuildPreviewLabels = {
   ram: string;
   storage: string;
   cooling: string;
+  psu?: string;
+  fans?: string;
+  os?: string;
 };
 
 export type BuildPreviewConfig = {
@@ -41,6 +45,9 @@ export type BuildPreviewConfig = {
   ramTier: number;
   storageTier: number;
   coolingTier: number;
+  psuTier?: number;
+  fanTier?: number;
+  caseFanCount?: number;
   accessoriesCount: number;
   labels: BuildPreviewLabels;
 };
@@ -60,6 +67,96 @@ const getRamStickCount = (t: number) => (t <= 0 ? 0 : t <= 2 ? 1 : t <= 4 ? 2 : 
 const getStorageCount = (t: number) => (t <= 0 ? 0 : t <= 2 ? 1 : t <= 5 ? 2 : 3);
 const getFanCount = (t: number) => (t <= 0 ? 0 : t <= 2 ? 1 : t <= 5 ? 2 : 3);
 const isTowerCooler = (label: string) => /air|tower|stock/i.test(label);
+
+const COMPONENT_MODEL_PATHS = {
+  gpu: "/models/components/gpu.glb",
+  cpu: "/models/components/cpu.glb",
+  ram: "/models/components/ram.glb",
+} as const;
+
+type TransformVec3 = [number, number, number];
+type OptionalModelState = {
+  status: "loading" | "ready" | "error";
+  scene: THREE.Group | null;
+};
+
+const optionalModelCache = new Map<string, THREE.Group | null>();
+
+const useOptionalGltfScene = (src: string): OptionalModelState => {
+  const [state, setState] = useState<OptionalModelState>(() => {
+    if (!src) return { status: "error", scene: null };
+    if (optionalModelCache.has(src)) {
+      const cachedScene = optionalModelCache.get(src) ?? null;
+      return { status: cachedScene ? "ready" : "error", scene: cachedScene };
+    }
+    return { status: "loading", scene: null };
+  });
+
+  useEffect(() => {
+    if (!src) {
+      setState({ status: "error", scene: null });
+      return;
+    }
+    if (optionalModelCache.has(src)) {
+      const cachedScene = optionalModelCache.get(src) ?? null;
+      setState({ status: cachedScene ? "ready" : "error", scene: cachedScene });
+      return;
+    }
+
+    let disposed = false;
+    const loader = new GLTFLoader();
+
+    setState({ status: "loading", scene: null });
+    loader.load(
+      src,
+      (gltf) => {
+        const scene = gltf.scene as THREE.Group;
+        optionalModelCache.set(src, scene);
+        if (!disposed) {
+          setState({ status: "ready", scene });
+        }
+      },
+      undefined,
+      () => {
+        optionalModelCache.set(src, null);
+        if (!disposed) {
+          setState({ status: "error", scene: null });
+        }
+      },
+    );
+
+    return () => {
+      disposed = true;
+    };
+  }, [src]);
+
+  return state;
+};
+
+const ModelInstance: React.FC<{
+  scene: THREE.Group;
+  position?: TransformVec3;
+  rotation?: TransformVec3;
+  scale?: number | TransformVec3;
+}> = ({ scene, position = [0, 0, 0], rotation = [0, 0, 0], scale = 1 }) => {
+  const clonedScene = useMemo(() => scene.clone(true), [scene]);
+
+  useEffect(() => {
+    clonedScene.traverse((obj) => {
+      const maybeMesh = obj as THREE.Mesh;
+      if (maybeMesh.isMesh) {
+        maybeMesh.castShadow = true;
+        maybeMesh.receiveShadow = true;
+      }
+    });
+  }, [clonedScene]);
+
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      <primitive object={clonedScene} />
+    </group>
+  );
+};
 
 /* ======================================================================= */
 /*  Texture Factories (RGBA - Three >= r152 safe)                           */
@@ -1129,8 +1226,11 @@ const CustomPcTower: React.FC<{ config: BuildPreviewConfig }> = ({ config }) => 
   const gpuRgbMats = useRef<THREE.MeshPhysicalMaterial[]>([]);
   const caseRgbStripRef = useRef<THREE.MeshPhysicalMaterial | null>(null);
   const ramRgbColor = useMemo(() => new THREE.Color("#00ccff"), []);
+  const gpuModel = useOptionalGltfScene(COMPONENT_MODEL_PATHS.gpu);
+  const cpuModel = useOptionalGltfScene(COMPONENT_MODEL_PATHS.cpu);
+  const ramModel = useOptionalGltfScene(COMPONENT_MODEL_PATHS.ram);
 
-  const fanCount = getFanCount(config.coolingTier);
+  const fanCount = Math.max(getFanCount(config.coolingTier), config.caseFanCount ?? 0);
   const ramStickCount = getRamStickCount(config.ramTier);
   const storageCount = getStorageCount(config.storageTier);
 
@@ -1202,10 +1302,34 @@ const CustomPcTower: React.FC<{ config: BuildPreviewConfig }> = ({ config }) => 
       )}
 
       {config.gpuTier > 0 && (
-        <GpuCard tier={config.gpuTier} rgbMats={gpuRgbMats} normalMap={normalMap} />
+        gpuModel.status === "ready" && gpuModel.scene
+          ? (
+              <ModelInstance
+                scene={gpuModel.scene}
+                position={[0.05, -0.2, 0.12]}
+                rotation={[0, Math.PI, 0]}
+                scale={0.58 + Math.min(config.gpuTier, 5) * 0.02}
+              />
+            )
+          : (
+              <GpuCard tier={config.gpuTier} rgbMats={gpuRgbMats} normalMap={normalMap} />
+            )
       )}
 
-      {config.cpuTier > 0 && <CpuChip />}
+      {config.cpuTier > 0 && (
+        cpuModel.status === "ready" && cpuModel.scene
+          ? (
+              <ModelInstance
+                scene={cpuModel.scene}
+                position={[-0.15, 0.25, -0.78]}
+                rotation={[0, Math.PI / 2, 0]}
+                scale={0.17 + Math.min(config.cpuTier, 8) * 0.005}
+              />
+            )
+          : (
+              <CpuChip />
+            )
+      )}
 
       {config.coolingTier > 0 && (
         isTowerCooler(config.labels.cooling) || config.coolingTier <= 3
@@ -1214,7 +1338,19 @@ const CustomPcTower: React.FC<{ config: BuildPreviewConfig }> = ({ config }) => 
       )}
 
       {Array.from({ length: ramStickCount }).map((_, i) => (
-        <RamStick key={i} x={0.35 + i * 0.07} rgbColor={ramRgbColor} />
+        ramModel.status === "ready" && ramModel.scene
+          ? (
+              <ModelInstance
+                key={i}
+                scene={ramModel.scene}
+                position={[0.35 + i * 0.07, 0.25, -0.82]}
+                rotation={[0, Math.PI / 2, 0]}
+                scale={0.34}
+              />
+            )
+          : (
+              <RamStick key={i} x={0.35 + i * 0.07} rgbColor={ramRgbColor} />
+            )
       ))}
 
       {Array.from({ length: storageCount }).map((_, i) => (
@@ -1248,6 +1384,11 @@ const PcPreview3D: React.FC<PcPreview3DProps> = ({ open, onClose, totalLabel, co
         </DialogHeader>
 
         <div className="rounded-xl border border-border bg-secondary/20 p-4">
+          <p className="mb-3 text-xs text-muted-foreground">
+            Real model examples: <span className="font-mono">/models/components/gpu.glb</span>,{" "}
+            <span className="font-mono">/models/components/cpu.glb</span>,{" "}
+            <span className="font-mono">/models/components/ram.glb</span>. If files are missing, procedural models are used.
+          </p>
           <div className="h-[480px] w-full overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-b from-zinc-900/60 via-zinc-950/80 to-black/95">
             <Canvas
               shadows

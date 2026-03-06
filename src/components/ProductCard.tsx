@@ -4,6 +4,7 @@ import { ShoppingCart, Star, Eye } from "lucide-react";
 import { Product } from "@/data/products";
 import { useCart } from "@/context/CartContext";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { formatTnd } from "@/lib/currency";
 
 interface ProductCardProps {
   product: Product;
@@ -104,9 +105,9 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           </div>
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</span>
+              <span className="text-lg font-bold text-foreground">{formatTnd(product.price)}</span>
               {product.originalPrice && (
-                <span className="text-sm text-muted-foreground line-through">${product.originalPrice.toFixed(2)}</span>
+                <span className="text-sm text-muted-foreground line-through">{formatTnd(product.originalPrice)}</span>
               )}
             </div>
             <motion.button

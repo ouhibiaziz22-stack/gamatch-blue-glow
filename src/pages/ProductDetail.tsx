@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Star, ArrowLeft, Truck, Shield, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
+import { formatTnd } from "@/lib/currency";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -62,12 +63,12 @@ const ProductDetail = () => {
             </div>
 
             <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-3xl font-bold text-foreground">${product.price.toFixed(2)}</span>
+              <span className="text-3xl font-bold text-foreground">{formatTnd(product.price)}</span>
               {product.originalPrice && (
                 <>
-                  <span className="text-lg text-muted-foreground line-through">${product.originalPrice.toFixed(2)}</span>
+                  <span className="text-lg text-muted-foreground line-through">{formatTnd(product.originalPrice)}</span>
                   <span className="px-2 py-0.5 rounded-md gamatch-accent-gradient text-primary-foreground text-xs font-bold">
-                    Save ${(product.originalPrice - product.price).toFixed(2)}
+                    Save {formatTnd(product.originalPrice - product.price)}
                   </span>
                 </>
               )}
@@ -87,7 +88,7 @@ const ProductDetail = () => {
             {/* Perks */}
             <div className="grid grid-cols-3 gap-4 mt-10 pt-8 border-t border-border">
               {[
-                { icon: Truck, label: "Free Shipping", sub: "Orders $99+" },
+                { icon: Truck, label: "Free Shipping", sub: "Orders 99 TND+" },
                 { icon: Shield, label: "2 Year Warranty", sub: "Full coverage" },
                 { icon: RotateCcw, label: "30 Day Returns", sub: "No hassle" },
               ].map(({ icon: Icon, label, sub }) => (

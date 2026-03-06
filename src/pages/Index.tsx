@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import SupportBot from "@/components/SupportBot";
 
 const Index = () => {
   const featured = products.filter((p) => p.featured);
@@ -53,7 +54,7 @@ const Index = () => {
               Ready to Dominate?
             </h2>
             <p className="text-primary-foreground/70 mb-6">
-              Join thousands of gamers who trust Gamatch for their competitive edge. Free shipping on orders over $99.
+              Join thousands of gamers who trust Gamatch for their competitive edge. Free shipping on orders over 99 TND.
             </p>
             <Button asChild className="gamatch-accent-gradient text-primary-foreground h-12 px-8 font-semibold rounded-xl hover:opacity-90 transition-opacity">
               <Link to="/products">Shop the Collection</Link>
@@ -61,6 +62,8 @@ const Index = () => {
           </div>
         </motion.div>
       </section>
+
+      <SupportBot />
     </div>
   );
 };

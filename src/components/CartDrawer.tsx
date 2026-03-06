@@ -3,6 +3,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
+import { formatTnd } from "@/lib/currency";
 
 const CartDrawer = () => {
   const { items, isOpen, setIsOpen, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
@@ -45,7 +47,7 @@ const CartDrawer = () => {
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-foreground truncate">{item.product.name}</h4>
-                      <p className="text-sm font-bold text-primary">${item.product.price.toFixed(2)}</p>
+                      <p className="text-sm font-bold text-primary">{formatTnd(item.product.price)}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <button
                           onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
@@ -76,10 +78,12 @@ const CartDrawer = () => {
             <div className="border-t border-border pt-4 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="font-medium text-foreground">Total</span>
-                <span className="text-xl font-bold text-primary">${totalPrice.toFixed(2)}</span>
+                <span className="text-xl font-bold text-primary">{formatTnd(totalPrice)}</span>
               </div>
-              <Button className="w-full gamatch-accent-gradient text-primary-foreground font-semibold h-12 text-base hover:opacity-90 transition-opacity">
-                Checkout
+              <Button asChild className="w-full gamatch-accent-gradient text-primary-foreground font-semibold h-12 text-base hover:opacity-90 transition-opacity">
+                <Link to="/paiement" onClick={() => setIsOpen(false)}>
+                  Go to Payment
+                </Link>
               </Button>
               <Button variant="ghost" size="sm" onClick={clearCart} className="w-full text-muted-foreground">
                 Clear Cart
