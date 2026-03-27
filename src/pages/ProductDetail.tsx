@@ -1,16 +1,92 @@
-import { useParams, Link } from "react-router-dom";
-import { products } from "@/data/products";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Star, ArrowLeft, Truck, Shield, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
+import { YouMightAlsoBuy } from "@/components/YouMightAlsoBuy";
 import { formatTnd } from "@/lib/currency";
+import { useEffect, useMemo, useState } from "react";
+import { api, type ApiProduct } from "@/lib/api";
+import { apiToProduct } from "@/lib/productAdapter";
+import { useRecommendations } from "@/hooks/useRecommendations";
+import { useAuth } from "@/hooks/useAuth";
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addToCart } = useCart();
-  const product = products.find((p) => p.id === id);
+  const { user } = useAuth();
+  const [productApi, setProductApi] = useState<ApiProduct | null>(null);
+  const [allProducts, setAllProducts] = useState<ApiProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Convert API products to format needed by recommendation engine
+  const recommendableProducts = useMemo(() => 
+    allProducts.map(p => ({
+      id: p._id || '',
+      name: p.name,
+      category: p.category || '',
+      price: p.price || 0,
+      rating: p.rating || 0,
+      tags: [p.category || '', ...(p.tags || [])],
+      specs: [],
+    })), 
+    [allProducts]
+  );
+
+  const { recommendations, trackInteraction } = useRecommendations(
+    recommendableProducts,
+    4,
+    id ? [id] : []
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    if (!id) return;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const prod = await api.getProduct(id);
+        if (!mounted) return;
+        setProductApi(prod);
+        
+        // Track product view
+        trackInteraction(id, 'view');
+        
+        // Fetch all products for recommendations
+        const allProds = await api.getProducts({});
+        if (mounted) {
+          setAllProducts(allProds.products || []);
+        }
+      } catch {
+        if (mounted) setProductApi(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [id, trackInteraction]);
+
+  const product = useMemo(() => (productApi ? apiToProduct(productApi) : null), [productApi]);
+
+  const handleProductSelect = (productId: string) => {
+    trackInteraction(productId, 'view');
+    navigate(`/product/${productId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="font-display text-2xl font-bold text-foreground mb-4">Loading product...</h1>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -22,8 +98,6 @@ const ProductDetail = () => {
       </div>
     );
   }
-
-  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 3);
 
   return (
     <div className="min-h-screen pt-24 pb-20">
@@ -103,14 +177,14 @@ const ProductDetail = () => {
         </div>
 
         {/* Related */}
-        {related.length > 0 && (
+        {recommendableProducts.length > 0 && (
           <section className="mt-20">
-            <h2 className="font-display text-2xl font-bold text-foreground mb-8">You Might Also Like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {related.map((p, i) => (
-                <ProductCard key={p.id} product={p} index={i} />
-              ))}
-            </div>
+            <YouMightAlsoBuy
+              currentProductId={id || ''}
+              userId={user?._id}
+              products={recommendableProducts}
+              onProductSelect={handleProductSelect}
+            />
           </section>
         )}
       </div>

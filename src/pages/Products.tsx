@@ -1,9 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { products, categories } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal } from "lucide-react";
+import { api } from "@/lib/api";
+import { apiToProduct } from "@/lib/productAdapter";
+import type { Product } from "@/data/products";
 
 const Products = () => {
   const [searchParams] = useSearchParams();
@@ -13,23 +15,52 @@ const Products = () => {
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [sortBy, setSortBy] = useState("featured");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>(["All"]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const nextCategory = searchParams.get("category") || "All";
+    const nextSearch = searchParams.get("search") || "";
+    setSelectedCategory(nextCategory);
+    setSearchQuery(nextSearch);
+  }, [searchParams]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const params: Record<string, string> = {};
+        if (selectedCategory !== "All") params.category = selectedCategory;
+        if (searchQuery.trim()) params.search = searchQuery.trim();
+        const data = await api.getProducts(params);
+        const mapped = data.products.map(apiToProduct);
+        if (!mounted) return;
+        setProducts(mapped);
+        if (selectedCategory === "All" && !searchQuery.trim()) {
+          const categories = Array.from(new Set(mapped.map((p) => p.category))).sort();
+          setAllCategories(["All", ...categories]);
+        }
+      } catch {
+        if (mounted) setProducts([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchProducts();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedCategory, searchQuery]);
 
   const filtered = useMemo(() => {
     let result = products;
-    if (selectedCategory !== "All") {
-      result = result.filter((p) => p.category === selectedCategory);
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
-      );
-    }
     if (sortBy === "price-low") result = [...result].sort((a, b) => a.price - b.price);
     if (sortBy === "price-high") result = [...result].sort((a, b) => b.price - a.price);
     if (sortBy === "rating") result = [...result].sort((a, b) => b.rating - a.rating);
     return result;
-  }, [selectedCategory, searchQuery, sortBy]);
+  }, [products, sortBy]);
 
   return (
     <div className="min-h-screen pt-24 pb-20">
@@ -73,7 +104,7 @@ const Products = () => {
 
         {/* Categories */}
         <div className="flex flex-wrap gap-2 mb-8">
-          {categories.map((cat) => (
+          {allCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -89,7 +120,11 @@ const Products = () => {
         </div>
 
         {/* Grid */}
-        {filtered.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-20 text-muted-foreground">
+            <p className="text-lg">Loading products...</p>
+          </div>
+        ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((product, i) => (
               <ProductCard key={product.id} product={product} index={i} />

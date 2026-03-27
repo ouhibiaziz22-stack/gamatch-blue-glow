@@ -1,14 +1,29 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
 
 function Connexion() {
+  const { user, login, register, logout } = useAuth();
+  const navigate = useNavigate();
   const [isLoginMode, setIsLoginMode] = useState(false);
   const [isForgotMode, setIsForgotMode] = useState(false);
+  const [forgotStep, setForgotStep] = useState<"email" | "code" | "newPassword">("email");
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    code: "",
+    newPassword: "",
+    confirmNewPassword: "",
   });
   const [message, setMessage] = useState("");
 
@@ -17,20 +32,75 @@ function Connexion() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isForgotMode) {
-      setMessage("Verification code sent to your email.");
-      return;
-    }
+    setLoading(true);
+    setMessage("");
 
-    if (!isLoginMode && form.password !== form.confirmPassword) {
-      setMessage("Passwords do not match.");
-      return;
-    }
+    try {
+      if (isForgotMode) {
+        if (forgotStep === "email") {
+          await api.forgotPassword(form.email);
+          setMessage("Verification code sent to your email.");
+          setForgotStep("code");
+        } else if (forgotStep === "code") {
+          await api.verifyCode(form.email, form.code);
+          setMessage("Code verified. Enter your new password.");
+          setForgotStep("newPassword");
+        } else if (forgotStep === "newPassword") {
+          if (form.newPassword !== form.confirmNewPassword) {
+            setMessage("Passwords do not match.");
+            return;
+          }
+          await api.resetPassword(form.email, form.code, form.newPassword);
+          setMessage("Password reset successfully! You can now sign in.");
+          setIsForgotMode(false);
+          setForgotStep("email");
+          setIsLoginMode(true);
+        }
+        return;
+      }
 
-    setMessage(isLoginMode ? "Login successful." : "Account created successfully.");
+      if (!isLoginMode && form.password !== form.confirmPassword) {
+        setMessage("Passwords do not match.");
+        return;
+      }
+
+      if (isLoginMode) {
+        await login(form.email, form.password);
+        setMessage("Login successful.");
+      } else {
+        await register(form.firstName, form.lastName, form.email, form.password);
+        setMessage("Account created successfully.");
+      }
+      setTimeout(() => navigate("/"), 1000);
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "An error occurred."));
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (user) {
+    return (
+      <section className="connexion-page">
+        <video className="connexion-video-bg" autoPlay muted loop playsInline>
+          <source src="/thnd.mp4" type="video/mp4" />
+        </video>
+        <div className="connexion-video-overlay" />
+        <div className="connexion-card">
+          <h1>Welcome, {user.firstName}!</h1>
+          <p>You are logged in as {user.email}</p>
+          <button onClick={() => navigate("/mes-commandes")} style={{ marginBottom: 12 }}>
+            My Orders
+          </button>
+          <button className="connexion-secondary-btn" onClick={logout}>
+            Sign Out
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="connexion-page">
@@ -41,7 +111,7 @@ function Connexion() {
         loop
         playsInline
       >
-        <source src="/videos/login-bg.mp4" type="video/mp4" />
+        <source src="/thnd.mp4" type="video/mp4" />
       </video>
       <div className="connexion-video-overlay" />
 
@@ -49,7 +119,11 @@ function Connexion() {
         <h1>{isForgotMode ? "Forgot Password" : isLoginMode ? "Sign In" : "Create Account"}</h1>
         <p>
           {isForgotMode
-            ? "Enter your email and we will send a verification code."
+            ? forgotStep === "email"
+              ? "Enter your email and we will send a verification code."
+              : forgotStep === "code"
+                ? "Enter the 6-digit code sent to your email."
+                : "Enter your new password."
             : isLoginMode
               ? "Sign in to manage your orders and custom builds."
               : "Register to manage your orders and custom builds."}
@@ -90,8 +164,49 @@ function Connexion() {
               value={form.email}
               onChange={onChange}
               required
+              disabled={isForgotMode && forgotStep !== "email"}
             />
           </label>
+
+          {isForgotMode && forgotStep === "code" && (
+            <label>
+              Verification Code
+              <input
+                type="text"
+                name="code"
+                value={form.code}
+                onChange={onChange}
+                required
+                maxLength={6}
+                placeholder="Enter 6-digit code"
+              />
+            </label>
+          )}
+
+          {isForgotMode && forgotStep === "newPassword" && (
+            <>
+              <label>
+                New Password
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={form.newPassword}
+                  onChange={onChange}
+                  required
+                />
+              </label>
+              <label>
+                Confirm New Password
+                <input
+                  type="password"
+                  name="confirmNewPassword"
+                  value={form.confirmNewPassword}
+                  onChange={onChange}
+                  required
+                />
+              </label>
+            </>
+          )}
 
           {!isForgotMode && (
             <label>
@@ -132,8 +247,18 @@ function Connexion() {
             </label>
           )}
 
-          <button type="submit">
-            {isForgotMode ? "Send code in email" : isLoginMode ? "Sign In" : "Create Account"}
+          <button type="submit" disabled={loading}>
+            {loading
+              ? "Please wait..."
+              : isForgotMode
+                ? forgotStep === "email"
+                  ? "Send code in email"
+                  : forgotStep === "code"
+                    ? "Verify code"
+                    : "Reset password"
+                : isLoginMode
+                  ? "Sign In"
+                  : "Create Account"}
           </button>
 
           {isForgotMode && (
@@ -142,6 +267,7 @@ function Connexion() {
               className="connexion-secondary-btn"
               onClick={() => {
                 setIsForgotMode(false);
+                setForgotStep("email");
                 setMessage("");
               }}
             >

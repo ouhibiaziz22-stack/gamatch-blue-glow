@@ -1,7 +1,14 @@
 import { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
 import { formatTnd } from "@/lib/currency";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
 
 const deliveryOptions = {
   standard: { label: "Livraison Standard (48h)", fee: 12 },
@@ -29,10 +36,13 @@ type CheckoutForm = {
 
 function Paiement() {
   const { items, clearCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("standard");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<CheckoutForm>({
     fullName: "",
     phone: "",
@@ -71,7 +81,7 @@ function Paiement() {
     setForm((prev) => ({ ...prev, [name as keyof CheckoutForm]: value }));
   };
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (cartItems.length === 0) {
@@ -104,8 +114,34 @@ function Paiement() {
       return;
     }
 
-    setMessage("Paiement valide. Votre commande est en cours de traitement.");
-    clearCart();
+    // If user is logged in, create order via API
+    if (user) {
+      setLoading(true);
+      try {
+        await api.createOrder({
+          shippingAddress: {
+            fullName: form.fullName,
+            phone: form.phone,
+            email: form.email,
+            city: form.city,
+            address: form.address,
+            postalCode: form.postalCode,
+          },
+          deliveryMethod,
+          paymentMethod,
+        });
+        setMessage("Paiement valide. Votre commande est en cours de traitement.");
+        clearCart();
+        setTimeout(() => navigate("/mes-commandes"), 2000);
+      } catch (err: unknown) {
+        setMessage(getErrorMessage(err, "Erreur lors de la creation de la commande."));
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setMessage("Paiement valide. Votre commande est en cours de traitement.");
+      clearCart();
+    }
   };
 
   return (
@@ -117,7 +153,7 @@ function Paiement() {
         loop
         playsInline
       >
-        <source src="/videos/login-bg.mp4" type="video/mp4" />
+        <source src="/thnd.mp4" type="video/mp4" />
       </video>
       <div className="paiement-video-overlay" />
 

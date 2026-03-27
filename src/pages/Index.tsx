@@ -1,4 +1,3 @@
-import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import HeroSection from "@/components/HeroSection";
 import { motion } from "framer-motion";
@@ -6,9 +5,27 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SupportBot from "@/components/SupportBot";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { apiToProduct } from "@/lib/productAdapter";
+import type { Product } from "@/data/products";
 
 const Index = () => {
-  const featured = products.filter((p) => p.featured);
+  const [featured, setFeatured] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    api.getProducts({ featured: "true" })
+      .then((data) => {
+        if (mounted) setFeatured(data.products.map(apiToProduct));
+      })
+      .catch(() => {
+        if (mounted) setFeatured([]);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -50,14 +67,18 @@ const Index = () => {
         >
           <div className="absolute top-1/2 right-1/4 w-64 h-64 rounded-full bg-primary/20 blur-[80px] animate-glow-pulse" />
           <div className="relative z-10 max-w-lg">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-primary mb-4">
               Ready to Dominate?
             </h2>
-            <p className="text-primary-foreground/70 mb-6">
+            <p className="text-primary/80 mb-6">
               Join thousands of gamers who trust Gamatch for their competitive edge. Free shipping on orders over 99 TND.
             </p>
-            <Button asChild className="gamatch-accent-gradient text-primary-foreground h-12 px-8 font-semibold rounded-xl hover:opacity-90 transition-opacity">
-              <Link to="/products">Shop the Collection</Link>
+            <Button asChild className="gamatch-accent-gradient h-12 px-8 font-semibold rounded-xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 gamatch-glow perspective-1000">
+              <Link to="/products" className="text-primary font-bold gamatch-text-glow inline-flex items-center justify-center">
+                <span className="inline-block hover:rotate-y-6 transition-transform duration-300 preserve-3d">
+                  Shop the Collection
+                </span>
+              </Link>
             </Button>
           </div>
         </motion.div>

@@ -1,8 +1,8 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Gamepad2, Headphones, Keyboard, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroBg from "@/assets/hero-bg.jpg";
 
 const FloatingIcon = ({ children, delay, x, y }: { children: React.ReactNode; delay: number; x: string; y: string }) => (
   <motion.div
@@ -20,11 +20,36 @@ const FloatingIcon = ({ children, delay, x, y }: { children: React.ReactNode; de
 );
 
 const HeroSection = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    const playPromise = video.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        // Ignore autoplay blocking; video remains ready for user interaction.
+      });
+    }
+  }, []);
+
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
-        <img src={heroBg} alt="" className="w-full h-full object-cover opacity-70" />
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="w-full h-full object-cover opacity-70"
+        >
+          <source src="/thnd.mp4" type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-r from-gamatch-black/95 via-gamatch-black/80 to-gamatch-black/50" />
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
       </div>

@@ -11,8 +11,12 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
-      "/api": {
+      "/api/chat": {
         target: "http://localhost:8787",
+        changeOrigin: true,
+      },
+      "/api": {
+        target: "http://localhost:5000",
         changeOrigin: true,
       },
     },

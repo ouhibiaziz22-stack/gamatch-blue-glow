@@ -1,135 +1,169 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ShoppingCart, Search, Menu, X, CircleUserRound } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ShoppingCart, Menu, X, CircleUserRound, Moon, Sun } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/hooks/useAuth";
+import PredictiveSearch from "@/components/PredictiveSearch";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
   const { totalItems, setIsOpen } = useCart();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
+  const { isDark, toggle: toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const isAdmin =
+    user?.role?.toLowerCase() === "admin" ||
+    user?.email?.toLowerCase() === "ouhibiaziz22@gmail.com";
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/products?search=${encodeURIComponent(searchQuery)}`;
-    }
-  };
+  const navLinks = [
+    { to: "/", label: "Accueil" },
+    { to: "/products", label: "Produits" },
+    { to: "/custom-build", label: "Custom Build" },
+  ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-gamatch-black/80 backdrop-blur-xl gamatch-nav-shadow border-b border-primary/10">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg gamatch-accent-gradient flex items-center justify-center gamatch-glow group-hover:scale-110 transition-transform">
-            <span className="text-primary-foreground font-display font-bold text-sm">G</span>
+          <div className="w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span className="text-white font-bold text-sm">G</span>
           </div>
-          <span className="font-display font-bold text-xl text-foreground">
-            Ga<span className="text-primary">matech</span>
+          <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:inline">
+            Gama<span className="text-blue-600 dark:text-blue-400">tech</span>
           </span>
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            Home
-          </Link>
-          <Link to="/products" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            Products
-          </Link>
-          <Link to="/products?category=Controllers" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            Controllers
-          </Link>
-          <Link to="/products?category=Audio" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            Audio
-          </Link>
-          <Link to="/custom-build" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            Custom Build
-          </Link>
+          {navLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+          {isAdmin && (
+            <>
+              <Link
+                to="/admin"
+                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/admin/add-product"
+                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                Admin
+              </Link>
+            </>
+          )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-3">
-          <Link
-            to="/connexion"
-            className="inline-flex h-9 items-center gap-2 rounded-lg px-2 lg:px-3 text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
-            aria-label="Connexion"
-          >
-            <CircleUserRound className="w-5 h-5" />
-            <span className="hidden lg:inline text-sm font-medium">Connexion</span>
-          </Link>
+        {/* SearchBar - Desktop */}
+        <div className="hidden lg:flex flex-1 max-w-xs mx-8">
+          <PredictiveSearch />
+        </div>
 
-          {/* Search */}
-          <AnimatePresence>
-            {searchOpen && (
-              <motion.form
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 220, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                onSubmit={handleSearch}
-                className="overflow-hidden"
-              >
-                <input
-                  autoFocus
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products..."
-                  className="w-full h-9 px-3 rounded-lg bg-secondary text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary"
-                />
-              </motion.form>
-            )}
-          </AnimatePresence>
+        {/* Right Actions */}
+        <div className="flex items-center gap-3">
+          {/* Theme Toggle */}
           <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+            onClick={toggleTheme}
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Toggle theme"
           >
-            <Search className="w-5 h-5" />
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+
+          {/* User Menu */}
+          {user ? (
+            <Link
+              to="/connexion"
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title={user.email}
+            >
+              <CircleUserRound size={18} />
+            </Link>
+          ) : (
+            <Link
+              to="/connexion"
+              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              Connexion
+            </Link>
+          )}
 
           {/* Cart */}
           <button
             onClick={() => setIsOpen(true)}
-            className="relative p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+            className="relative p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            <ShoppingCart className="w-5 h-5" />
+            <ShoppingCart size={18} />
             {totalItems > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 w-5 h-5 rounded-full gamatch-accent-gradient text-primary-foreground text-xs flex items-center justify-center font-bold"
-              >
+              <span className="absolute -top-1 -right-1 bg-blue-600 dark:bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                 {totalItems}
-              </motion.span>
+              </span>
             )}
           </button>
 
-          {/* Mobile menu */}
+          {/* Mobile Menu */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+            className="p-2 rounded-lg md:hidden text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Nav */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden overflow-hidden bg-gamatch-black/95 border-b border-primary/10"
+            className="md:hidden bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-800 overflow-hidden"
           >
-            <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
-              <Link to="/" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Home</Link>
-              <Link to="/products" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Products</Link>
-              <Link to="/products?category=Controllers" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Controllers</Link>
-              <Link to="/products?category=Audio" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Audio</Link>
-              <Link to="/custom-build" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Custom Build</Link>
-              <Link to="/connexion" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-primary py-2">Connexion</Link>
+            <div className="px-4 py-4 space-y-3">
+              {/* Mobile Search */}
+              <PredictiveSearch />
+
+              {/* Mobile Links */}
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMobileOpen(false)}
+                  className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {isAdmin && (
+                <>
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileOpen(false)}
+                    className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/admin/add-product"
+                    onClick={() => setMobileOpen(false)}
+                    className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+                  >
+                    Ajouter Produit
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
