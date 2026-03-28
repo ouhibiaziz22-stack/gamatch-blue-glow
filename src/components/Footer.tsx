@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 
 const Footer = () => (
   <footer className="relative bg-gamatch-black border-t border-primary/10 py-16 mt-20">
-    {/* Top glow line */}
     <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
     <div className="container mx-auto px-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -15,7 +14,9 @@ const Footer = () => (
               Ga<span className="text-primary">match</span>
             </span>
           </div>
-          <p className="text-sm leading-relaxed text-muted-foreground">Premium gaming gear for champions. Level up your setup with Gamatch.</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Premium gaming gear for champions. Level up your setup with Gamatch.
+          </p>
         </div>
         <div>
           <h4 className="font-display font-semibold text-foreground mb-4">Shop</h4>
@@ -37,7 +38,7 @@ const Footer = () => (
         <div>
           <h4 className="font-display font-semibold text-foreground mb-4">Company</h4>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-            <span className="hover:text-primary transition-colors cursor-pointer">About</span>
+            <Link to="/about" className="hover:text-primary transition-colors">About</Link>
             <span className="hover:text-primary transition-colors cursor-pointer">Careers</span>
             <span className="hover:text-primary transition-colors cursor-pointer">Contact</span>
           </div>

@@ -174,4 +174,8 @@ export const api = {
     if (Array.isArray(data)) return data;
     return Array.isArray(data.orders) ? data.orders : [];
   },
+  updateOrderStatus: (id: string, body: { status?: string; paymentStatus?: string }) =>
+    request<ApiOrder>(`/orders/${id}/status`, { method: "PUT", body: JSON.stringify(body) }),
+  cancelOrder: (id: string) =>
+    request<{ message: string; order: ApiOrder }>(`/orders/${id}/cancel`, { method: "POST" }),
 };

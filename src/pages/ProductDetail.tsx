@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Star, ArrowLeft, Truck, Shield, RotateCcw } from "lucide-react";
@@ -11,15 +11,20 @@ import { api, type ApiProduct } from "@/lib/api";
 import { apiToProduct } from "@/lib/productAdapter";
 import { useRecommendations } from "@/hooks/useRecommendations";
 import { useAuth } from "@/hooks/useAuth";
+import type { Product } from "@/data/products";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [productApi, setProductApi] = useState<ApiProduct | null>(null);
   const [allProducts, setAllProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [productFromState, setProductFromState] = useState<Product | null>(
+    () => (location.state as { product?: Product } | null)?.product ?? null
+  );
 
   // Convert API products to format needed by recommendation engine
   const recommendableProducts = useMemo(() => 
@@ -45,7 +50,9 @@ const ProductDetail = () => {
     let mounted = true;
     if (!id) return;
     const load = async () => {
-      setLoading(true);
+      if (!productFromState) {
+        setLoading(true);
+      }
       try {
         const prod = await api.getProduct(id);
         if (!mounted) return;
@@ -69,20 +76,33 @@ const ProductDetail = () => {
     return () => {
       mounted = false;
     };
-  }, [id, trackInteraction]);
+  }, [id, trackInteraction, productFromState]);
 
-  const product = useMemo(() => (productApi ? apiToProduct(productApi) : null), [productApi]);
+  const product = useMemo(() => {
+    if (productApi) return apiToProduct(productApi);
+    if (productFromState) return productFromState;
+    return null;
+  }, [productApi, productFromState]);
 
   const handleProductSelect = (productId: string) => {
     trackInteraction(productId, 'view');
     navigate(`/product/${productId}`);
   };
 
-  if (loading) {
+  if (loading && !product) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground mb-4">Loading product...</h1>
+        <div className="flex flex-col items-center gap-5 text-center">
+          <div className="relative h-14 w-14">
+            <div className="absolute inset-0 rounded-full border-2 border-border/60" />
+            <div className="absolute inset-0 rounded-full border-2 border-t-primary border-l-primary border-r-transparent border-b-transparent animate-spin" />
+            <div className="absolute inset-2 rounded-full bg-muted/40" />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Loading</p>
+            <h1 className="font-display text-2xl font-bold text-foreground">Loading product...</h1>
+            <p className="text-sm text-muted-foreground mt-2">Fetching details and recommendations</p>
+          </div>
         </div>
       </div>
     );

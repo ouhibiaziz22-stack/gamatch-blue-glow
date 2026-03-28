@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
@@ -26,6 +26,53 @@ function Connexion() {
     confirmNewPassword: "",
   });
   const [message, setMessage] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileForm, setProfileForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    city: "",
+    address: "",
+    bio: "",
+    avatar: "",
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const stored = localStorage.getItem("profile");
+    const saved = stored ? (JSON.parse(stored) as Partial<typeof profileForm>) : {};
+    setProfileForm((prev) => ({
+      ...prev,
+      ...saved,
+      firstName: saved.firstName || user.firstName || prev.firstName,
+      lastName: saved.lastName || user.lastName || prev.lastName,
+      email: saved.email || user.email || prev.email,
+    }));
+  }, [user]);
+
+  const onProfileChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setProfileForm((prev) => ({ ...prev, [name]: value }));
+    if (profileMessage) setProfileMessage("");
+  };
+
+  const onAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfileForm((prev) => ({ ...prev, avatar: String(reader.result) }));
+      setProfileMessage("");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onProfileSave = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    localStorage.setItem("profile", JSON.stringify(profileForm));
+    setProfileMessage("Profile updated successfully.");
+  };
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -88,15 +135,75 @@ function Connexion() {
           <source src="/thnd.mp4" type="video/mp4" />
         </video>
         <div className="connexion-video-overlay" />
-        <div className="connexion-card">
-          <h1>Welcome, {user.firstName}!</h1>
-          <p>You are logged in as {user.email}</p>
-          <button onClick={() => navigate("/mes-commandes")} style={{ marginBottom: 12 }}>
-            My Orders
-          </button>
-          <button className="connexion-secondary-btn" onClick={logout}>
-            Sign Out
-          </button>
+        <div className="connexion-card profile-card">
+          <div className="profile-header">
+            <div>
+              <h1>Welcome, {user.firstName}!</h1>
+              <p>Manage your profile details and account settings.</p>
+            </div>
+            <div className="profile-actions">
+              <button onClick={() => navigate("/mes-commandes")}>My Orders</button>
+              <button className="connexion-secondary-btn" onClick={logout}>
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          <form className="profile-form" onSubmit={onProfileSave}>
+            <div className="profile-avatar">
+              <div className="profile-avatar-preview">
+                {profileForm.avatar ? (
+                  <img src={profileForm.avatar} alt="Profile" />
+                ) : (
+                  <span>{(profileForm.firstName || "U").slice(0, 1).toUpperCase()}</span>
+                )}
+              </div>
+              <div className="profile-avatar-meta">
+                <p>Profile photo</p>
+                <label className="profile-avatar-btn">
+                  Upload new
+                  <input type="file" accept="image/*" onChange={onAvatarChange} />
+                </label>
+              </div>
+            </div>
+
+            <div className="profile-grid">
+              <label>
+                First Name
+                <input type="text" name="firstName" value={profileForm.firstName} onChange={onProfileChange} />
+              </label>
+              <label>
+                Last Name
+                <input type="text" name="lastName" value={profileForm.lastName} onChange={onProfileChange} />
+              </label>
+              <label>
+                Email
+                <input type="email" name="email" value={profileForm.email} onChange={onProfileChange} />
+              </label>
+              <label>
+                Phone
+                <input type="text" name="phone" value={profileForm.phone} onChange={onProfileChange} />
+              </label>
+              <label>
+                City
+                <input type="text" name="city" value={profileForm.city} onChange={onProfileChange} />
+              </label>
+              <label>
+                Address
+                <input type="text" name="address" value={profileForm.address} onChange={onProfileChange} />
+              </label>
+            </div>
+
+            <label className="profile-bio">
+              About you
+              <textarea name="bio" value={profileForm.bio} onChange={onProfileChange} rows={3} />
+            </label>
+
+            <div className="profile-save">
+              <button type="submit">Save Profile</button>
+              {profileMessage && <span className="connexion-msg">{profileMessage}</span>}
+            </div>
+          </form>
         </div>
       </section>
     );

@@ -13,6 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { formatTnd } from "@/lib/currency";
 
 interface SalesData {
   date: string;
@@ -39,6 +40,9 @@ export const SalesChart: React.FC<SalesChartProps> = ({
     margin: { top: 5, right: 30, left: 0, bottom: 5 },
   };
 
+  const tooltipFormatter = (value: number, name: string) =>
+    name === "revenue" ? formatTnd(Number(value)) : Number(value).toLocaleString();
+
   const renderChart = () => {
     switch (type) {
       case "area":
@@ -46,25 +50,25 @@ export const SalesChart: React.FC<SalesChartProps> = ({
           <AreaChart {...chartProps}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="date" stroke="#6b7280" />
-            <YAxis stroke="#6b7280" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+            <YAxis stroke="hsl(var(--muted-foreground))" />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
               }}
-              formatter={(value: number) => `${value.toLocaleString()}€`}
+              formatter={tooltipFormatter}
             />
             <Area
               type="monotone"
               dataKey="revenue"
-              stroke="#3b82f6"
+              stroke="hsl(var(--primary))"
               fillOpacity={1}
               fill="url(#colorRevenue)"
             />
@@ -74,52 +78,52 @@ export const SalesChart: React.FC<SalesChartProps> = ({
       case "bar":
         return (
           <BarChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="date" stroke="#6b7280" />
-            <YAxis stroke="#6b7280" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+            <YAxis stroke="hsl(var(--muted-foreground))" />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
               }}
-              formatter={(value: number) => `${value.toLocaleString()}`}
+              formatter={tooltipFormatter}
             />
             <Legend />
-            <Bar dataKey="sales" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="orders" fill="#10b981" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="orders" fill="hsl(var(--accent))" radius={[8, 8, 0, 0]} />
           </BarChart>
         );
 
-      default: // line
+      default:
         return (
           <LineChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="date" stroke="#6b7280" />
-            <YAxis stroke="#6b7280" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+            <YAxis stroke="hsl(var(--muted-foreground))" />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
               }}
-              formatter={(value: number) => `${value.toLocaleString()}`}
+              formatter={tooltipFormatter}
             />
             <Legend />
             <Line
               type="monotone"
               dataKey="sales"
-              stroke="#3b82f6"
+              stroke="hsl(var(--primary))"
               strokeWidth={2}
-              dot={{ fill: "#3b82f6", r: 4 }}
+              dot={{ fill: "hsl(var(--primary))", r: 4 }}
               activeDot={{ r: 6 }}
             />
             <Line
               type="monotone"
               dataKey="revenue"
-              stroke="#10b981"
+              stroke="hsl(var(--accent))"
               strokeWidth={2}
-              dot={{ fill: "#10b981", r: 4 }}
+              dot={{ fill: "hsl(var(--accent))", r: 4 }}
               activeDot={{ r: 6 }}
             />
           </LineChart>
@@ -128,12 +132,8 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-      {title && (
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {title}
-        </h3>
-      )}
+    <div className="bg-card rounded-lg p-6 border border-border">
+      {title && <h3 className="text-lg font-semibold text-foreground mb-4">{title}</h3>}
       <ResponsiveContainer width="100%" height={height}>
         {renderChart()}
       </ResponsiveContainer>

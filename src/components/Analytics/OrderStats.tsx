@@ -14,7 +14,13 @@ interface OrderStatsProps {
   colors?: string[];
 }
 
-const DEFAULT_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const DEFAULT_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(36 100% 55%)",
+  "hsl(0 84% 50%)",
+  "hsl(134 70% 48%)",
+];
 
 export const OrderStats: React.FC<OrderStatsProps> = ({
   data,
@@ -23,12 +29,8 @@ export const OrderStats: React.FC<OrderStatsProps> = ({
   colors = DEFAULT_COLORS,
 }) => {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-      {title && (
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {title}
-        </h3>
-      )}
+    <div className="bg-card rounded-lg p-6 border border-border">
+      {title && <h3 className="text-lg font-semibold text-foreground mb-4">{title}</h3>}
 
       <ResponsiveContainer width="100%" height={height}>
         <PieChart>
@@ -39,35 +41,28 @@ export const OrderStats: React.FC<OrderStatsProps> = ({
             labelLine={false}
             label={({ name, percentage }) => `${name}: ${percentage}%`}
             outerRadius={100}
-            fill="#8884d8"
+            fill="hsl(var(--primary))"
             dataKey="value"
           >
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
             ))}
           </Pie>
-          <Tooltip
-            formatter={(value: number | string) => {
-              return `${value}`;
-            }}
-          />
+          <Tooltip formatter={(value: number | string) => `${value}`} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Legend Table */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
         {data.map((item, idx) => (
-          <div key={idx} className="flex items-center gap-3 p-2 rounded bg-gray-50 dark:bg-gray-700/50">
+          <div key={idx} className="flex items-center gap-3 p-2 rounded bg-secondary">
             <div
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: colors[idx % colors.length] }}
             />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {item.name}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-sm font-medium text-foreground">{item.name}</p>
+              <p className="text-xs text-muted-foreground">
                 {item.value} commandes ({item.percentage}%)
               </p>
             </div>

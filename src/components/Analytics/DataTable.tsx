@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 interface TableColumn {
   key: string;
@@ -24,23 +24,21 @@ export const DataTable: React.FC<DataTableProps> = ({
   const displayData = data.slice(0, maxRows);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-card rounded-lg border border-border overflow-hidden">
       {title && (
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {title}
-          </h3>
+        <div className="p-6 border-b border-border">
+          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         </div>
       )}
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+            <tr className="bg-secondary border-b border-border">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-6 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-${
+                  className={`px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-${
                     col.align || "left"
                   }`}
                 >
@@ -52,14 +50,11 @@ export const DataTable: React.FC<DataTableProps> = ({
           <tbody>
             {displayData.length > 0 ? (
               displayData.map((row, idx) => (
-                <tr
-                  key={idx}
-                  className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
+                <tr key={idx} className="border-b border-border hover:bg-secondary/60 transition-colors">
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`px-6 py-4 text-sm text-gray-900 dark:text-gray-100 text-${
+                      className={`px-6 py-4 text-sm text-foreground text-${
                         col.align || "left"
                       }`}
                     >
@@ -84,7 +79,7 @@ export const DataTable: React.FC<DataTableProps> = ({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-6 py-10 text-center text-gray-500 dark:text-gray-400"
+                  className="px-6 py-10 text-center text-muted-foreground"
                 >
                   Aucune donnée disponible
                 </td>
@@ -95,7 +90,7 @@ export const DataTable: React.FC<DataTableProps> = ({
       </div>
 
       {data.length > maxRows && (
-        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+        <div className="px-6 py-3 bg-secondary border-t border-border text-xs text-muted-foreground">
           Affichage de {displayData.length} sur {data.length} entrées
         </div>
       )}
@@ -103,7 +98,6 @@ export const DataTable: React.FC<DataTableProps> = ({
   );
 };
 
-// Component for showing top items (products, customers, etc)
 interface TopItemsProps {
   items: Array<{ name: string; value: number; change?: number }>;
   title: string;
@@ -116,35 +110,31 @@ export const TopItems: React.FC<TopItemsProps> = ({
   formatValue = (v) => v.toString(),
 }) => {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        {title}
-      </h3>
+    <div className="bg-card rounded-lg p-6 border border-border">
+      <h3 className="text-lg font-semibold text-foreground mb-4">{title}</h3>
 
       <div className="space-y-3">
         {items.map((item, idx) => (
           <div
             key={idx}
-            className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="flex items-center justify-between p-3 rounded-lg bg-secondary hover:bg-secondary/70 transition-colors"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {item.name}
-              </p>
+              <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
             </div>
             <div className="flex items-center gap-2 ml-4">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              <span className="text-sm font-semibold text-foreground">
                 {formatValue(item.value)}
               </span>
               {item.change !== undefined && (
                 <>
                   {item.change >= 0 ? (
-                    <div className="text-green-600 dark:text-green-400 flex items-center gap-0.5">
+                    <div className="text-green-600 flex items-center gap-0.5">
                       <ArrowUpRight size={14} />
                       <span className="text-xs font-medium">{item.change}%</span>
                     </div>
                   ) : (
-                    <div className="text-red-600 dark:text-red-400 flex items-center gap-0.5">
+                    <div className="text-red-600 flex items-center gap-0.5">
                       <ArrowDownRight size={14} />
                       <span className="text-xs font-medium">{Math.abs(item.change)}%</span>
                     </div>

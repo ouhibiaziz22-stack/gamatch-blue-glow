@@ -24,15 +24,15 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <span className="text-white font-bold text-sm">G</span>
+          <div className="w-8 h-8 rounded-lg gamatch-accent-gradient flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span className="text-primary-foreground font-bold text-sm">G</span>
           </div>
-          <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:inline">
-            Gama<span className="text-blue-600 dark:text-blue-400">tech</span>
+          <span className="font-bold text-lg text-foreground hidden sm:inline">
+            Gama<span className="text-primary">tech</span>
           </span>
         </Link>
 
@@ -42,7 +42,7 @@ const Navbar = () => {
             <Link
               key={link.to}
               to={link.to}
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               {link.label}
             </Link>
@@ -51,13 +51,13 @@ const Navbar = () => {
             <>
               <Link
                 to="/admin"
-                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
               >
                 Dashboard
               </Link>
               <Link
                 to="/admin/add-product"
-                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
               >
                 Admin
               </Link>
@@ -75,7 +75,7 @@ const Navbar = () => {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
             aria-label="Toggle theme"
           >
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -85,7 +85,7 @@ const Navbar = () => {
           {user ? (
             <Link
               to="/connexion"
-              className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
               title={user.email}
             >
               <CircleUserRound size={18} />
@@ -93,7 +93,7 @@ const Navbar = () => {
           ) : (
             <Link
               to="/connexion"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               Connexion
             </Link>
@@ -102,11 +102,11 @@ const Navbar = () => {
           {/* Cart */}
           <button
             onClick={() => setIsOpen(true)}
-            className="relative p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="relative p-2 rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
           >
             <ShoppingCart size={18} />
             {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-blue-600 dark:bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                 {totalItems}
               </span>
             )}
@@ -115,7 +115,7 @@ const Navbar = () => {
           {/* Mobile Menu */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-lg md:hidden text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg md:hidden text-muted-foreground hover:bg-secondary transition-colors"
           >
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -129,7 +129,7 @@ const Navbar = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-800 overflow-hidden"
+            className="md:hidden bg-background border-b border-border overflow-hidden"
           >
             <div className="px-4 py-4 space-y-3">
               {/* Mobile Search */}
@@ -141,7 +141,7 @@ const Navbar = () => {
                   key={link.to}
                   to={link.to}
                   onClick={() => setMobileOpen(false)}
-                  className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+                  className="block text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2"
                 >
                   {link.label}
                 </Link>
@@ -151,14 +151,14 @@ const Navbar = () => {
                   <Link
                     to="/admin"
                     onClick={() => setMobileOpen(false)}
-                    className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+                    className="block text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2"
                   >
                     Dashboard
                   </Link>
                   <Link
                     to="/admin/add-product"
                     onClick={() => setMobileOpen(false)}
-                    className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+                    className="block text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2"
                   >
                     Ajouter Produit
                   </Link>

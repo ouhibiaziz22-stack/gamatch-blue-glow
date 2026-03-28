@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart, Star, Eye } from "lucide-react";
 import { Product } from "@/data/products";
 import { useCart } from "@/context/CartContext";
@@ -13,6 +13,7 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const { addToCart } = useCart();
+  const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
 
   const x = useMotionValue(0);
@@ -40,6 +41,10 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
     y.set(0);
   };
 
+  const handleCardClick = () => {
+    navigate(`/product/${product.id}`, { state: { product } });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -51,8 +56,17 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
         ref={ref}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        onClick={handleCardClick}
         style={{ rotateX, rotateY }}
-        className="preserve-3d relative rounded-2xl overflow-hidden bg-card border border-border gamatch-card-shadow transition-shadow duration-500 group-hover:gamatch-card-shadow-hover group-hover:border-primary/30"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleCardClick();
+          }
+        }}
+        className="preserve-3d relative rounded-2xl overflow-hidden bg-card border border-border gamatch-card-shadow transition-shadow duration-500 group-hover:gamatch-card-shadow-hover group-hover:border-primary/30 cursor-pointer"
       >
         {/* Dynamic glow overlay following mouse */}
         <motion.div
@@ -65,7 +79,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           }}
         />
 
-        <Link to={`/product/${product.id}`}>
+        <Link to={`/product/${product.id}`} state={{ product }} onClick={(e) => e.stopPropagation()}>
           <div className="relative aspect-square overflow-hidden">
             <motion.img
               src={product.image}
@@ -94,7 +108,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
         <div className="p-4 space-y-2 relative z-20">
           <span className="text-xs font-medium text-primary uppercase tracking-wider">{product.category}</span>
-          <Link to={`/product/${product.id}`}>
+          <Link to={`/product/${product.id}`} state={{ product }} onClick={(e) => e.stopPropagation()}>
             <h3 className="font-display font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-300">
               {product.name}
             </h3>
@@ -113,7 +127,10 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             <motion.button
               whileHover={{ scale: 1.15, rotate: 5 }}
               whileTap={{ scale: 0.85 }}
-              onClick={() => addToCart(product)}
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(product);
+              }}
               className="w-10 h-10 rounded-xl gamatch-accent-gradient flex items-center justify-center text-primary-foreground transition-all duration-300 group-hover:gamatch-glow"
             >
               <ShoppingCart className="w-4 h-4" />
