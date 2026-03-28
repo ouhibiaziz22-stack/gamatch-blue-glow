@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { api } from "@/lib/api";
 import { apiToProduct } from "@/lib/productAdapter";
-import type { Product } from "@/data/products";
+import { products as localProducts, type Product } from "@/data/products";
 
 const Products = () => {
   const [searchParams] = useSearchParams();
@@ -35,15 +35,23 @@ const Products = () => {
         if (selectedCategory !== "All") params.category = selectedCategory;
         if (searchQuery.trim()) params.search = searchQuery.trim();
         const data = await api.getProducts(params);
-        const mapped = data.products.map(apiToProduct);
+        const mapped = Array.isArray(data.products) ? data.products.map(apiToProduct) : [];
         if (!mounted) return;
-        setProducts(mapped);
+        const hasApiData = mapped.length > 0;
+        const source = hasApiData ? mapped : localProducts;
+        setProducts(source);
         if (selectedCategory === "All" && !searchQuery.trim()) {
-          const categories = Array.from(new Set(mapped.map((p) => p.category))).sort();
+          const categories = Array.from(new Set(source.map((p) => p.category))).sort();
           setAllCategories(["All", ...categories]);
         }
       } catch {
-        if (mounted) setProducts([]);
+        if (!mounted) return;
+        // Fallback catalog for deployments where API is unavailable or empty.
+        setProducts(localProducts);
+        if (selectedCategory === "All" && !searchQuery.trim()) {
+          const categories = Array.from(new Set(localProducts.map((p) => p.category))).sort();
+          setAllCategories(["All", ...categories]);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
