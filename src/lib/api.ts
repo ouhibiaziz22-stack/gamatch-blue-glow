@@ -71,6 +71,13 @@ interface AdminOrdersResponse {
   pages: number;
 }
 
+interface OrdersResponse {
+  orders: ApiOrder[];
+  total?: number;
+  page?: number;
+  pages?: number;
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem("token");
   const headers: Record<string, string> = { ...((options.headers as Record<string, string>) || {}) };
@@ -167,7 +174,11 @@ export const api = {
     paymentMethod: string;
   }) => request<ApiOrder>("/orders", { method: "POST", body: JSON.stringify(body) }),
 
-  getOrders: () => request<ApiOrder[]>("/orders"),
+  getOrders: async () => {
+    const data = await request<ApiOrder[] | OrdersResponse>("/orders");
+    if (Array.isArray(data)) return data;
+    return Array.isArray(data.orders) ? data.orders : [];
+  },
   getOrder: (id: string) => request<ApiOrder>(`/orders/${id}`),
   getAdminOrders: async () => {
     const data = await request<ApiOrder[] | AdminOrdersResponse>("/orders/admin/all");

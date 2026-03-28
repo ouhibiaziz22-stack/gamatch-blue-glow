@@ -28,6 +28,19 @@ const Products = () => {
 
   useEffect(() => {
     let mounted = true;
+    const applyLocalFilters = (items: Product[]) => {
+      const normalizedSearch = searchQuery.trim().toLowerCase();
+      return items.filter((item) => {
+        const categoryOk = selectedCategory === "All" || item.category === selectedCategory;
+        const searchOk =
+          normalizedSearch.length === 0 ||
+          item.name.toLowerCase().includes(normalizedSearch) ||
+          item.category.toLowerCase().includes(normalizedSearch) ||
+          item.description.toLowerCase().includes(normalizedSearch);
+        return categoryOk && searchOk;
+      });
+    };
+
     const fetchProducts = async () => {
       setLoading(true);
       try {
@@ -38,16 +51,16 @@ const Products = () => {
         const mapped = Array.isArray(data.products) ? data.products.map(apiToProduct) : [];
         if (!mounted) return;
         const hasApiData = mapped.length > 0;
-        const source = hasApiData ? mapped : localProducts;
+        const source = hasApiData ? mapped : applyLocalFilters(localProducts);
         setProducts(source);
         if (selectedCategory === "All" && !searchQuery.trim()) {
-          const categories = Array.from(new Set(source.map((p) => p.category))).sort();
+          const categories = Array.from(new Set(localProducts.map((p) => p.category))).sort();
           setAllCategories(["All", ...categories]);
         }
       } catch {
         if (!mounted) return;
         // Fallback catalog for deployments where API is unavailable or empty.
-        setProducts(localProducts);
+        setProducts(applyLocalFilters(localProducts));
         if (selectedCategory === "All" && !searchQuery.trim()) {
           const categories = Array.from(new Set(localProducts.map((p) => p.category))).sort();
           setAllCategories(["All", ...categories]);

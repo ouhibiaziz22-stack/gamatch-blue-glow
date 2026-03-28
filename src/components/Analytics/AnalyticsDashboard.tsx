@@ -91,9 +91,7 @@ const buildMonthlySeries = (orders: ApiOrder[], start: Date, end: Date) => {
   return months;
 };
 
-export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
-  period = "month",
-}) => {
+export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ period = "month" }) => {
   const [loading, setLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>(period);
   const [orders, setOrders] = useState<ApiOrder[]>([]);
@@ -113,8 +111,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       setOrders(fetchedOrders || []);
       const productData = await api.getProducts({});
       setProducts(productData.products || []);
-    } catch (err) {
-      setError("Impossible de charger les données.");
+    } catch {
+      setError("Impossible de charger les donnees.");
     } finally {
       setLoading(false);
     }
@@ -124,28 +122,31 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     loadData();
   }, []);
 
-  const now = new Date();
-  const periodStart = getPeriodStart(selectedPeriod, now);
-  const prevEnd = new Date(periodStart.getTime() - 1);
-  const prevStart = new Date(prevEnd);
-  prevStart.setTime(prevEnd.getTime() - (now.getTime() - periodStart.getTime()));
+  const timeWindow = useMemo(() => {
+    const now = new Date();
+    const periodStart = getPeriodStart(selectedPeriod, now);
+    const prevEnd = new Date(periodStart.getTime() - 1);
+    const prevStart = new Date(prevEnd);
+    prevStart.setTime(prevEnd.getTime() - (now.getTime() - periodStart.getTime()));
+    return { now, periodStart, prevStart, prevEnd };
+  }, [selectedPeriod]);
 
   const periodOrders = useMemo(
     () =>
       orders.filter((order) => {
         const created = new Date(order.createdAt);
-        return created >= periodStart && created <= now;
+        return created >= timeWindow.periodStart && created <= timeWindow.now;
       }),
-    [orders, periodStart, now]
+    [orders, timeWindow]
   );
 
   const prevOrders = useMemo(
     () =>
       orders.filter((order) => {
         const created = new Date(order.createdAt);
-        return created >= prevStart && created <= prevEnd;
+        return created >= timeWindow.prevStart && created <= timeWindow.prevEnd;
       }),
-    [orders, prevStart, prevEnd]
+    [orders, timeWindow]
   );
 
   const metrics = useMemo(() => {
@@ -170,21 +171,21 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         title: "Revenu Total",
         value: formatTnd(currentRevenue),
         change: percentChange(currentRevenue, prevRevenue),
-        icon: <span className="text-2xl">💰</span>,
-        description: "Cette période vs précédente",
+        icon: <span className="text-2xl">$</span>,
+        description: "Cette periode vs precedente",
       },
       {
         title: "Commandes",
         value: currentOrders,
         change: percentChange(currentOrders, prevOrdersCount),
-        icon: <span className="text-2xl">📦</span>,
-        description: "Commandes complétées",
+        icon: <span className="text-2xl">#</span>,
+        description: "Commandes completees",
       },
       {
         title: "Prix Moyen",
         value: formatTnd(currentAverage),
         change: percentChange(currentAverage, prevAverage),
-        icon: <span className="text-2xl">💳</span>,
+        icon: <span className="text-2xl">AVG</span>,
         description: "Par commande",
       },
       {
@@ -192,18 +193,18 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         value: deliveryRate.toFixed(1),
         unit: "%",
         change: percentChange(deliveryRate, prevDeliveryRate),
-        icon: <span className="text-2xl">📈</span>,
-        description: "Commandes livrées",
+        icon: <span className="text-2xl">%</span>,
+        description: "Commandes livrees",
       },
     ];
   }, [periodOrders, prevOrders]);
 
   const salesData = useMemo(() => {
     if (selectedPeriod === "year") {
-      return buildMonthlySeries(periodOrders, periodStart, now);
+      return buildMonthlySeries(periodOrders, timeWindow.periodStart, timeWindow.now);
     }
-    return buildDailySeries(periodOrders, periodStart, now);
-  }, [periodOrders, selectedPeriod, periodStart, now]);
+    return buildDailySeries(periodOrders, timeWindow.periodStart, timeWindow.now);
+  }, [periodOrders, selectedPeriod, timeWindow]);
 
   const orderStatusData = useMemo(() => {
     const statusMap: Record<string, number> = {};
@@ -214,11 +215,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     const total = periodOrders.length || 1;
     const labelMap: Record<string, string> = {
       pending: "En attente",
-      confirmed: "Confirmées",
-      processing: "Traitées",
-      shipped: "Expédiées",
-      delivered: "Livrées",
-      cancelled: "Annulées",
+      confirmed: "Confirmees",
+      processing: "Traitees",
+      shipped: "Expediees",
+      delivered: "Livrees",
+      cancelled: "Annulees",
     };
     return Object.entries(statusMap).map(([key, value]) => ({
       name: labelMap[key] || key,
@@ -240,18 +241,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       .slice(0, 5)
       .map(([name, value]) => ({ name, value }));
     if (ranked.length > 0) return ranked;
-    return products
-      .slice(0, 5)
-      .map((product) => ({ name: product.name, value: product.price || 0 }));
+    return products.slice(0, 5).map((product) => ({ name: product.name, value: product.price || 0 }));
   }, [periodOrders, products]);
 
   const topCustomers = useMemo(() => {
     const totals: Record<string, number> = {};
     periodOrders.forEach((order) => {
       if (isCancelled(order.status)) return;
-      const name =
-        order.shippingAddress?.fullName ||
-        (typeof order.user === "string" ? order.user : "Client");
+      const name = order.shippingAddress?.fullName || (typeof order.user === "string" ? order.user : "Client");
       totals[name] = (totals[name] || 0) + order.total;
     });
     return Object.entries(totals)
@@ -272,11 +269,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           const key = normalizeStatus(order.status || "pending");
           const labelMap: Record<string, string> = {
             pending: "En attente",
-            confirmed: "Confirmée",
-            processing: "Traitée",
-            shipped: "Expédiée",
-            delivered: "Livrée",
-            cancelled: "Annulée",
+            confirmed: "Confirmee",
+            processing: "Traitee",
+            shipped: "Expediee",
+            delivered: "Livree",
+            cancelled: "Annulee",
           };
           return labelMap[key] || order.status;
         })(),
@@ -284,47 +281,44 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       }));
   }, [orders]);
 
-  const handleRefresh = () => {
-    loadData();
-  };
-
   const handleExport = () => {
-    const safe = (value: string | number | undefined | null) =>
-      `"${String(value ?? "").replace(/"/g, '""')}"`;
-
+    const safe = (value: string | number | undefined | null) => `"${String(value ?? "").replace(/"/g, '""')}"`;
     const rows: string[] = [];
+
     rows.push(["Section", "Champ", "Valeur"].map(safe).join(","));
-    rows.push([ "Résumé", "Période", selectedPeriod ].map(safe).join(","));
-    rows.push([ "Résumé", "Du", periodStart.toISOString().slice(0, 10) ].map(safe).join(","));
-    rows.push([ "Résumé", "Au", now.toISOString().slice(0, 10) ].map(safe).join(","));
-    rows.push([ "Résumé", "Revenu Total", metrics[0]?.value ?? "" ].map(safe).join(","));
-    rows.push([ "Résumé", "Commandes", metrics[1]?.value ?? "" ].map(safe).join(","));
-    rows.push([ "Résumé", "Prix Moyen", metrics[2]?.value ?? "" ].map(safe).join(","));
-    rows.push([ "Résumé", "Taux Livraison", `${metrics[3]?.value ?? ""}%` ].map(safe).join(","));
+    rows.push(["Resume", "Periode", selectedPeriod].map(safe).join(","));
+    rows.push(["Resume", "Du", timeWindow.periodStart.toISOString().slice(0, 10)].map(safe).join(","));
+    rows.push(["Resume", "Au", timeWindow.now.toISOString().slice(0, 10)].map(safe).join(","));
+    rows.push(["Resume", "Revenu Total", metrics[0]?.value ?? ""].map(safe).join(","));
+    rows.push(["Resume", "Commandes", metrics[1]?.value ?? ""].map(safe).join(","));
+    rows.push(["Resume", "Prix Moyen", metrics[2]?.value ?? ""].map(safe).join(","));
+    rows.push(["Resume", "Taux Livraison", `${metrics[3]?.value ?? ""}%`].map(safe).join(","));
     rows.push("");
 
     rows.push(["Top Produits", "Produit", "Valeur"].map(safe).join(","));
     topProducts.forEach((item) => {
-      rows.push([ "Top Produits", item.name, formatTnd(item.value) ].map(safe).join(","));
+      rows.push(["Top Produits", item.name, formatTnd(item.value)].map(safe).join(","));
     });
     rows.push("");
 
     rows.push(["Top Clients", "Client", "Valeur"].map(safe).join(","));
     topCustomers.forEach((item) => {
-      rows.push([ "Top Clients", item.name, formatTnd(item.value) ].map(safe).join(","));
+      rows.push(["Top Clients", item.name, formatTnd(item.value)].map(safe).join(","));
     });
     rows.push("");
 
     rows.push(["Commandes", "ID", "Client", "Total", "Statut", "Date"].map(safe).join(","));
     orders.forEach((order) => {
-      rows.push([
-        "Commande",
-        `#${order._id.slice(-8).toUpperCase()}`,
-        order.shippingAddress?.fullName || "Client",
-        formatTnd(order.total),
-        order.status,
-        new Date(order.createdAt).toLocaleDateString("fr-FR"),
-      ].map(safe).join(","));
+      rows.push(
+        [
+          "Commande",
+          `#${order._id.slice(-8).toUpperCase()}`,
+          order.shippingAddress?.fullName || "Client",
+          formatTnd(order.total),
+          order.status,
+          new Date(order.createdAt).toLocaleDateString("fr-FR"),
+        ].map(safe).join(",")
+      );
     });
 
     const csv = rows.join("\n");
@@ -343,9 +337,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Dashboard Analytics</h1>
-            <p className="text-muted-foreground mt-1">
-              Vue d'ensemble des performances de votre boutique
-            </p>
+            <p className="text-muted-foreground mt-1">Vue d'ensemble des performances de votre boutique</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -358,17 +350,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               >
                 <option value="week">Cette semaine</option>
                 <option value="month">Ce mois</option>
-                <option value="year">Cette année</option>
+                <option value="year">Cette annee</option>
               </select>
             </div>
 
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              disabled={loading}
-            >
+            <Button onClick={loadData} variant="outline" size="sm" className="gap-2" disabled={loading}>
               <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               {loading ? "Actualisation..." : "Actualiser"}
             </Button>
@@ -388,12 +374,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
-            <SalesChart
-              data={salesData}
-              type="area"
-              title="Revenus & Ventes"
-              height={350}
-            />
+            <SalesChart data={salesData} type="area" title="Revenus et Ventes" height={350} />
           </div>
           <div>
             <OrderStats data={orderStatusData} height={350} />
@@ -401,23 +382,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <TopItems
-            items={topProducts}
-            title="Top 5 Produits"
-            formatValue={(v) => formatTnd(v)}
-          />
-          <TopItems
-            items={topCustomers}
-            title="Top 5 Clients"
-            formatValue={(v) => formatTnd(v)}
-          />
+          <TopItems items={topProducts} title="Top 5 Produits" formatValue={(v) => formatTnd(v)} />
+          <TopItems items={topCustomers} title="Top 5 Clients" formatValue={(v) => formatTnd(v)} />
         </div>
 
         <div className="mb-8">
           <DataTable
-            title="Commandes Récentes"
+            title="Commandes Recentes"
             columns={[
-              { key: "orderId", label: "N° Commande" },
+              { key: "orderId", label: "No Commande" },
               { key: "customer", label: "Client" },
               {
                 key: "total",
@@ -447,8 +420,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               {
                 key: "date",
                 label: "Date",
-                render: (v) =>
-                  (v instanceof Date ? v : new Date(String(v))).toLocaleDateString("fr-FR"),
+                render: (v) => (v instanceof Date ? v : new Date(String(v))).toLocaleDateString("fr-FR"),
               },
             ]}
             data={recentOrders}
@@ -458,8 +430,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         <div className="text-center text-sm text-muted-foreground">
           <p>
-            Les données sont actualisées chaque heure. Dernière mise à jour:{" "}
-            {new Date().toLocaleTimeString("fr-FR")}
+            Les donnees sont actualisees chaque heure. Derniere mise a jour: {new Date().toLocaleTimeString("fr-FR")}
           </p>
         </div>
       </div>
