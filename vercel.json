@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd fontend && npm install",
+  "buildCommand": "cd fontend && npm run build",
+  "outputDirectory": "fontend/dist"
+}

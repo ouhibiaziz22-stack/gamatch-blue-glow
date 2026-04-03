@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="Gamatech logo">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .brand-box { fill: #facc15; }
+      .brand-letter { fill: #111111; font: 700 92px "Segoe UI", Arial, sans-serif; }
+      .brand-text { fill: #111111; font: 700 112px "Segoe UI", Arial, sans-serif; }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1200" height="320" rx="36" />
+  <rect class="brand-box" x="70" y="70" width="180" height="180" rx="46" />
+  <text class="brand-letter" x="160" y="188" text-anchor="middle" dominant-baseline="middle">G</text>
+  <text class="brand-text" x="300" y="195">Gamatech</text>
+</svg>
+
