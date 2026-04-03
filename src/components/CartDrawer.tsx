@@ -3,11 +3,24 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { formatTnd } from "@/lib/currency";
+import { useAuth } from "@/hooks/useAuth";
 
 const CartDrawer = () => {
   const { items, isOpen, setIsOpen, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleCheckout = () => {
+    setIsOpen(false);
+    if (!user) {
+      navigate("/connexion", { state: { redirectTo: location.pathname } });
+      return;
+    }
+    navigate("/paiement");
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -80,10 +93,8 @@ const CartDrawer = () => {
                 <span className="font-medium text-foreground">Total</span>
                 <span className="text-xl font-bold text-primary">{formatTnd(totalPrice)}</span>
               </div>
-              <Button asChild className="w-full gamatch-accent-gradient text-primary-foreground font-semibold h-12 text-base hover:opacity-90 transition-opacity">
-                <Link to="/paiement" onClick={() => setIsOpen(false)}>
-                  Go to Payment
-                </Link>
+              <Button onClick={handleCheckout} className="w-full gamatch-accent-gradient text-primary-foreground font-semibold h-12 text-base hover:opacity-90 transition-opacity">
+                Go to Payment
               </Button>
               <Button variant="ghost" size="sm" onClick={clearCart} className="w-full text-muted-foreground">
                 Clear Cart

@@ -29,6 +29,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(data.user);
   };
 
+  const loginWithToken = async (tokenValue: string) => {
+    localStorage.setItem("token", tokenValue);
+    setToken(tokenValue);
+    const { user } = await api.getMe();
+    setUser(user);
+  };
+
   const register = async (firstName: string, lastName: string, email: string, password: string) => {
     const data = await api.register({ firstName, lastName, email, password });
     localStorage.setItem("token", data.token);
@@ -43,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, loginWithToken, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

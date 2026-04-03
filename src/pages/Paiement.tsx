@@ -80,6 +80,13 @@ function Paiement() {
   const total = subtotal + deliveryFee + codFee;
 
   useEffect(() => {
+    if (!user) {
+      navigate("/connexion", { replace: true, state: { redirectTo: "/paiement" } });
+      return;
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
     if (!user) return;
     setForm((prev) => ({
       ...prev,
@@ -144,6 +151,12 @@ function Paiement() {
     e.preventDefault();
     setSubmitted(true);
 
+    if (!user) {
+      setMessage("Veuillez vous connecter pour finaliser votre achat.");
+      navigate("/connexion", { state: { redirectTo: "/paiement" } });
+      return;
+    }
+
     if (!hasItems) {
       setMessage("Votre panier est vide.");
       return;
@@ -154,34 +167,27 @@ function Paiement() {
       return;
     }
 
-    // If user is logged in, create order via API
-    if (user) {
-      setLoading(true);
-      try {
-        await api.createOrder({
-          shippingAddress: {
-            fullName: form.fullName,
-            phone: form.phone,
-            email: form.email,
-            city: form.city,
-            address: form.address,
-            postalCode: form.postalCode,
-          },
-          deliveryMethod,
-          paymentMethod,
-        });
-        setSuccess(true);
-        setMessage("");
-        clearCart();
-      } catch (err: unknown) {
-        setMessage(getErrorMessage(err, "Erreur lors de la creation de la commande."));
-      } finally {
-        setLoading(false);
-      }
-    } else {
+    setLoading(true);
+    try {
+      await api.createOrder({
+        shippingAddress: {
+          fullName: form.fullName,
+          phone: form.phone,
+          email: form.email,
+          city: form.city,
+          address: form.address,
+          postalCode: form.postalCode,
+        },
+        deliveryMethod,
+        paymentMethod,
+      });
       setSuccess(true);
       setMessage("");
       clearCart();
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "Erreur lors de la creation de la commande."));
+    } finally {
+      setLoading(false);
     }
   };
 

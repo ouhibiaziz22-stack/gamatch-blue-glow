@@ -1,10 +1,11 @@
 import { useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ShoppingCart, Star, Eye } from "lucide-react";
 import { Product } from "@/data/products";
 import { useCart } from "@/context/CartContext";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { formatTnd } from "@/lib/currency";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ProductCardProps {
   product: Product;
@@ -13,7 +14,9 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const ref = useRef<HTMLDivElement>(null);
 
   const x = useMotionValue(0);
@@ -43,6 +46,15 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`, { state: { product } });
+  };
+
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!user) {
+      navigate("/connexion", { state: { redirectTo: location.pathname } });
+      return;
+    }
+    addToCart(product);
   };
 
   return (
@@ -127,10 +139,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             <motion.button
               whileHover={{ scale: 1.15, rotate: 5 }}
               whileTap={{ scale: 0.85 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                addToCart(product);
-              }}
+              onClick={handleAddToCart}
               className="w-10 h-10 rounded-xl gamatch-accent-gradient flex items-center justify-center text-primary-foreground transition-all duration-300 group-hover:gamatch-glow"
             >
               <ShoppingCart className="w-4 h-4" />

@@ -1,8 +1,9 @@
 import { lazy, Suspense, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { formatTnd } from "@/lib/currency";
+import { useAuth } from "@/hooks/useAuth";
 
 type BuildPart =
   | "case"
@@ -231,6 +232,9 @@ const PcPreview3D = lazy(() => import("@/components/PcPreview3D"));
 
 const CustomBuild = () => {
   const { addToCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [goal, setGoal] = useState<BuildGoal>("gaming");
   const [budget, setBudget] = useState(0);
   const [selected, setSelected] = useState<Record<BuildPart, number>>(initialSelection);
@@ -461,6 +465,12 @@ const CustomBuild = () => {
   };
 
   const addToShop = () => {
+    if (!user) {
+      setCartMessage("Please login before adding a build to cart.");
+      navigate("/connexion", { state: { redirectTo: location.pathname } });
+      return;
+    }
+
     if (total === 0) {
       setCartMessage("Select components before adding to cart.");
       return;

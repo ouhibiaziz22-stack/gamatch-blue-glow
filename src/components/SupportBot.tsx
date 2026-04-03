@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, MessageCircle, Send, User, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { API_BASE } from "@/lib/api";
 
 type ChatMessage = {
   id: number;
@@ -13,6 +15,14 @@ const quickQuestions = [
   "How long is shipping?",
   "Can I pay on delivery?",
 ];
+
+const getFriendlyFallbackReason = (reason: string) => {
+  if (reason === "ai_key_missing_or_invalid") {
+    return "AI assistant is in basic mode right now.";
+  }
+
+  return "AI assistant is temporarily in basic mode.";
+};
 
 const getFallbackReply = (question: string) => {
   const q = question.toLowerCase();
@@ -47,10 +57,13 @@ const getFallbackReply = (question: string) => {
 const API_URL = (import.meta.env.VITE_CHAT_API_URL as string | undefined) || "/api/chat";
 
 const SupportBot = () => {
+  const { user, token } = useAuth();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
+  const [chatError, setChatError] = useState("");
+  const [aiHealth, setAiHealth] = useState<"unknown" | "connected" | "misconfigured">("unknown");
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: 1, role: "bot", text: "Got any questions? I am happy to help." },
   ]);
@@ -72,6 +85,7 @@ const SupportBot = () => {
     setInput("");
     setIsTyping(true);
     setUsingFallback(false);
+    setChatError("");
 
     const historyPayload = [...messages, userMessage].map((m) => ({
       role: m.role,
@@ -91,14 +105,20 @@ const SupportBot = () => {
       });
 
       if (!response.ok) {
-        throw new Error("AI chat request failed");
+        const errorPayload = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errorPayload.error || "AI chat request failed");
       }
 
-      const data = (await response.json()) as { reply?: string };
+      const data = (await response.json()) as { reply?: string; mode?: "ai" | "fallback"; reason?: string };
       const answer = (data.reply || "").trim();
 
       if (!answer) {
         throw new Error("AI returned empty response");
+      }
+
+      setUsingFallback(data.mode === "fallback");
+      if (data.mode === "fallback" && data.reason) {
+        setChatError(getFriendlyFallbackReason(data.reason));
       }
 
       setMessages((prev) => [
@@ -109,12 +129,19 @@ const SupportBot = () => {
           text: answer,
         },
       ]);
-    } catch {
+    } catch (err: unknown) {
       setUsingFallback(true);
+      const errorMessage = getErrorMessage(err, "AI is temporarily unavailable.");
+      setChatError(errorMessage);
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
+          role: "bot",
+          text: "AI assistant is temporarily in basic mode.",
+        },
+        {
+          id: Date.now() + 2,
           role: "bot",
           text: getFallbackReply(text),
         },
@@ -137,6 +164,42 @@ const SupportBot = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    const isAdmin = user?.role === "admin";
+    if (!open || !isAdmin) return;
+
+    let cancelled = false;
+
+    const checkHealth = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/chat/health`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+
+        if (!response.ok) {
+          throw new Error("Health request failed");
+        }
+
+        const data = (await response.json()) as { status?: "connected" | "misconfigured" };
+        if (cancelled) return;
+        setAiHealth(data.status === "connected" ? "connected" : "misconfigured");
+      } catch (_err) {
+        if (cancelled) return;
+        setAiHealth("unknown");
+      }
+    };
+
+    void checkHealth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, token, user?.role]);
+
+  const isAdmin = user?.role === "admin";
+  const aiBadgeText = aiHealth === "connected" ? "AI Connected" : aiHealth === "misconfigured" ? "AI Misconfigured" : "AI Unknown";
+  const aiBadgeClass = aiHealth === "connected" ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/30" : aiHealth === "misconfigured" ? "bg-red-500/15 text-red-300 border-red-400/30" : "bg-slate-500/15 text-slate-300 border-slate-400/30";
 
   return (
     <div className="fixed bottom-4 right-4 z-[70]">
@@ -170,6 +233,12 @@ const SupportBot = () => {
                 <div>
                   <p className="text-sm font-semibold text-foreground">Gamatech Assistant</p>
                   <p className="text-xs text-muted-foreground">{usingFallback ? "Fallback mode" : "AI online"}</p>
+                  {isAdmin && (
+                    <p className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium ${aiBadgeClass}`}>
+                      {aiBadgeText}
+                    </p>
+                  )}
+                  {chatError && <p className="text-[11px] text-red-400">{chatError}</p>}
                 </div>
               </div>
               <button

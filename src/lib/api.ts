@@ -1,5 +1,5 @@
 const configuredBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
-const API_BASE = (configuredBase && configuredBase.length > 0 ? configuredBase : "/api").replace(/\/$/, "");
+export const API_BASE = (configuredBase && configuredBase.length > 0 ? configuredBase : "/api").replace(/\/$/, "");
 
 export interface ApiUser {
   _id: string;

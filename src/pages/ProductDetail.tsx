@@ -89,6 +89,14 @@ const ProductDetail = () => {
     navigate(`/product/${productId}`);
   };
 
+  const handleAddToCart = () => {
+    if (!user) {
+      navigate("/connexion", { state: { redirectTo: location.pathname } });
+      return;
+    }
+    addToCart(product);
+  };
+
   if (loading && !product) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
@@ -172,7 +180,7 @@ const ProductDetail = () => {
 
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
-                onClick={() => addToCart(product)}
+                onClick={handleAddToCart}
                 className="gamatch-accent-gradient text-primary-foreground h-14 px-10 text-lg font-semibold rounded-xl hover:opacity-90 transition-opacity gamatch-glow w-full sm:w-auto"
               >
                 <ShoppingCart className="w-5 h-5 mr-2" /> Add to Cart

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api";
+import { API_BASE, api } from "@/lib/api";
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;
@@ -9,8 +9,11 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 };
 
 function Connexion() {
-  const { user, login, register, logout } = useAuth();
+  const { user, login, loginWithToken, register, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo =
+    (location.state as { redirectTo?: string } | null)?.redirectTo || "/";
   const [isLoginMode, setIsLoginMode] = useState(false);
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [forgotStep, setForgotStep] = useState<"email" | "code" | "newPassword">("email");
@@ -50,6 +53,57 @@ function Connexion() {
       email: saved.email || user.email || prev.email,
     }));
   }, [user]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const googleToken = params.get("token");
+    const googleError = params.get("googleError");
+    const appleError = params.get("appleError");
+
+    if (!googleToken && !googleError && !appleError) return;
+
+    const clearParams = () => {
+      window.history.replaceState({}, "", window.location.pathname);
+    };
+
+    const providerError = googleError || appleError;
+
+    if (providerError) {
+      setMessage(providerError);
+      setIsLoginMode(true);
+      clearParams();
+      return;
+    }
+
+    const completeGoogleLogin = async () => {
+      try {
+        setLoading(true);
+        setMessage("");
+        await loginWithToken(googleToken as string);
+        clearParams();
+        navigate(redirectTo, { replace: true });
+      } catch (err: unknown) {
+        clearParams();
+        setMessage(getErrorMessage(err, "Google sign-in failed."));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void completeGoogleLogin();
+  }, [location.search, loginWithToken, navigate, redirectTo]);
+
+  const onGoogleLogin = () => {
+    const callbackUrl = `${window.location.origin}/connexion`;
+    const startUrl = `${API_BASE}/auth/google/start?redirect=${encodeURIComponent(callbackUrl)}`;
+    window.location.href = startUrl;
+  };
+
+  const onAppleLogin = () => {
+    const callbackUrl = `${window.location.origin}/connexion`;
+    const startUrl = `${API_BASE}/auth/apple/start?redirect=${encodeURIComponent(callbackUrl)}`;
+    window.location.href = startUrl;
+  };
 
   const onProfileChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -120,7 +174,7 @@ function Connexion() {
         await register(form.firstName, form.lastName, form.email, form.password);
         setMessage("Account created successfully.");
       }
-      setTimeout(() => navigate("/"), 1000);
+      setTimeout(() => navigate(redirectTo), 1000);
     } catch (err: unknown) {
       setMessage(getErrorMessage(err, "An error occurred."));
     } finally {
@@ -402,7 +456,7 @@ function Connexion() {
             <button
               type="button"
               className="social-btn google-btn"
-              onClick={() => setMessage("Google login is not connected yet.")}
+              onClick={onGoogleLogin}
             >
               <span className="social-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
@@ -418,7 +472,7 @@ function Connexion() {
             <button
               type="button"
               className="social-btn apple-btn"
-              onClick={() => setMessage("Apple login is not connected yet.")}
+              onClick={onAppleLogin}
             >
               <span className="social-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
